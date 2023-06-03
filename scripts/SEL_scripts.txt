@@ -1,0 +1,10 @@
+select * from [company].[departments]
+select * from [company].[jobs]
+select * from [company].[hired_employees]
+select * from [company].[logs]
+
+delete from [company].[departments]
+delete from [company].[hired_employees]
+delete from [company].[jobs]
+delete from [company].[logs]
+GO
