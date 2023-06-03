@@ -1,0 +1,17 @@
+CREATE PROCEDURE company.get_employees_by_job_and_department
+AS
+BEGIN
+	SELECT d.department, j.job,
+		SUM(CASE WHEN DATEPART(QUARTER, CAST(he.datetime AS DATE)) = 1 THEN 1 ELSE 0 END) AS Q1,
+		SUM(CASE WHEN DATEPART(QUARTER, CAST(he.datetime AS DATE)) = 2 THEN 1 ELSE 0 END) AS Q2,
+		SUM(CASE WHEN DATEPART(QUARTER, CAST(he.datetime AS DATE)) = 3 THEN 1 ELSE 0 END) AS Q3,
+		SUM(CASE WHEN DATEPART(QUARTER, CAST(he.datetime AS DATE)) = 4 THEN 1 ELSE 0 END) AS Q4
+	FROM company.hired_employees he
+	JOIN company.departments d ON he.department_id = d.id
+	JOIN company.jobs j ON he.job_id = j.id
+	WHERE DATEPART(YEAR, CAST(he.datetime AS DATE)) = 2021
+	GROUP BY d.department, j.job 
+	ORDER BY d.department, j.job
+END;	
+
+--EXEC company.get_employees_by_job_and_department;

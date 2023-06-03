@@ -1,0 +1,26 @@
+CREATE PROCEDURE company.get_departments_above_mean_hired
+AS
+BEGIN
+	WITH mean_hired AS (
+	SELECT AVG(hired) AS mean_hired
+	FROM (
+	
+		SELECT d.id, d.department, COUNT(he.id) AS hired
+		FROM company.hired_employees he
+		JOIN company.departments d ON he.department_id = d.id
+		WHERE DATEPART(YEAR, CAST(he.datetime AS DATE)) = 2021
+		GROUP BY d.id, d.department
+	) AS t
+	)
+	SELECT d.id, d.department, COUNT(he.id) AS hired
+	FROM company.hired_employees he
+	JOIN company.departments d ON he.department_id = d.id
+	WHERE DATEPART(YEAR, CAST(he.datetime AS DATE)) = 2021
+	GROUP BY d.id, d.department
+	HAVING COUNT(he.id) > (SELECT mean_hired FROM mean_hired)
+	ORDER BY hired DESC
+
+END;
+
+
+--EXEC company.get_departments_above_mean_hired;
