@@ -1,5 +1,6 @@
 import csv
 import os
+from typing import Optional
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
@@ -62,14 +63,15 @@ def db_conection ():
 
 def valid_none(df:pd.DataFrame):
     # Reemplace empty values with None
-    df = df.replace('', None)
+    df_clean = df.replace('', None)
     # Create booleana mask to identify  empty values
-    mask_na = df.isna().any(axis=1)
+    mask_na = df_clean.isna().any(axis=1)
     # Create new dataframe with emtpty values
-    df_logs = df[mask_na]
+    df_logs = df_clean[mask_na].copy()
+    df_logs ["type_error"] = "empty"
     #delete rows with empty values orginal dataframe
-    df = df[~mask_na]
-    return df_logs
+    df_clean = df[~mask_na]
+    return df_clean, df_logs
 
 #valid int columns and sent them to the log in case of mismatch
 def valid_int(df:pd.DataFrame,df_logs:pd.DataFrame,name_column:str): 
@@ -77,11 +79,37 @@ def valid_int(df:pd.DataFrame,df_logs:pd.DataFrame,name_column:str):
     mask_numeric = df[name_column + '_int'].notna()
     df_clean = df[mask_numeric].copy() 
     df_clean.drop(name_column + '_int', axis=1, inplace=True) 
-    df_logs_int = pd.concat([df_logs, df[~mask_numeric]]) 
-    df_logs_int.drop(name_column + '_int', axis=1, inplace=True) 
+    df_logs_int = df[~mask_numeric].copy()
+    df_logs_int ["type_error"] = "int"
+    df_logs_int.drop(name_column + '_int', axis=1, inplace=True)
+    df_logs_int = pd.concat([df_logs, df_logs_int]) 
     return df_clean, df_logs_int
 
+def valid_unique (engine,df:pd.DataFrame,df_logs:pd.DataFrame,esquema:str,name_table:str,columns:list):
+    sql = "SELECT {} FROM {}.{}".format(", ".join(columns),esquema, name_table)
+    sql_df = pd.read_sql(sql=sql, con=engine)    
+    df['id'] = df['id'].astype(int)
+    df_unique = pd.concat((df, sql_df))
+    mask_dup = df_unique.duplicated(columns[0], keep = False)
+    df_logs_unique = df_unique[mask_dup].assign(type_error='unique')
+    df_logs_unique = pd.concat([df_logs, df_logs_unique])
+    df_unique = df_unique[~mask_dup]
+    df_logs_unique = df_logs_unique.drop_duplicates(columns[0], keep="first")    
+    return df_unique,df_logs_unique
+
 # Insert df_jobs into the company.jobs table using the to_sql() method
-def insert_db(engine,df:pd.DataFrame,name_table:str,schema_name:str,operation:str):    
+def insert_db(engine,df:pd.DataFrame,name_table:str,schema_name:str,operation:str):
     df.to_sql(name_table, con=engine, schema=schema_name, if_exists=operation, index=False)
     print("LOAD ", name_table, " TABLE, rows inserted: " , len(df.index))
+
+
+def load_log(engine,df:pd.DataFrame,list_columns:list,name_table:str,schema_name:str,operation:str):
+    df_logs = df
+    df_logs ["created"] = pd.to_datetime ("today")
+    df_logs ["table_name"] = name_table
+    df_logs ["valid_row"] = df_logs [list_columns].apply (lambda x: x.to_json (), axis = 1)
+    df_logs = df_logs.drop (list_columns, axis = 1)
+    df_logs.to_sql("logs", con=engine, schema=schema_name, if_exists=operation, index=False)
+    print("LOAD logs from ", name_table, " TABLE, rows inserted: " , len(df_logs.index))
+
+
