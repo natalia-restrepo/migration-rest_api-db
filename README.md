@@ -8,3 +8,5 @@ pip install azure.identity
 pip install azure.storage.blob
 pip install pandas
 pip install sqlalchemy
+pip install fastapi
+pip install uvicorn
