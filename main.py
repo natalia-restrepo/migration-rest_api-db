@@ -76,11 +76,11 @@ def load_jobs(jobs: List[Jobs]):
         raise HTTPException (status_code = 400, detail = str (e))
 
 @app.post("/departments")
-def load_deparments(deparments: List[Departments]):
+def load_departments(departments: List[Departments]):
     try:
         #Database conection
         engine = db_conection()
-        df_departments = pd.DataFrame([t.dict() for t in deparments])
+        df_departments = pd.DataFrame([t.dict() for t in departments])
         # Reemplace empty values with None
         #valid empty value
         df_departments,df_departments_logs = valid_none(df_departments)    
@@ -89,7 +89,7 @@ def load_deparments(deparments: List[Departments]):
         #valid unique
         df_departments,df_departments_logs = valid_unique(engine,df_departments,df_departments_logs,'company','departments',['id','department'])        
         # Insert df_hired_employees into the company.hired_employees table using the to_sql() method
-        insert_db(engine,df_departments,'deparments','company','append')
+        insert_db(engine,df_departments,'departments','company','append')
         #insert log table
         if not df_departments_logs.empty:
             load_log(engine,df_departments_logs,["id", "department"],'departments','company','append')        
