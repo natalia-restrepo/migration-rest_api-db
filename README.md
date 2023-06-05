@@ -1,4 +1,6 @@
-# migration-csv-db
+
+# 1
+## migration-restAPI-db
 
 migration data using REST API to the SQL Server database
 
@@ -39,3 +41,11 @@ Access url to test API:
   http://127.0.0.1:8000/
 
   http://127.0.0.1:8000/docs
+  
+  # 2
+1\. scripts\get_departments_above_mean_hired.txt.
+
+2\. scripts\get_employees_by_job_and_department.txt.
+
+3\. visual_report\visual_report.
+  
